@@ -2,6 +2,7 @@ POST   http://localhost:8080/api/todo HTTP/1.1
 content-type: application/json
 
 {
-    "content": "sample",
-    "checked": true
+    "content": "Test insert item 3",
+    "checked": true,
+    "creation_date": "2024-10-03"
 }

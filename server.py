@@ -19,26 +19,8 @@ CREATE_TO_DO_ITEM_TABLE="""create table if not exists to_do_items(
 	creation_date date default current_date
 );"""
 
-INSERT_TEST_TO_DO_ITEM="""INSERT INTO to_do_items (to_do_content, checked, to_do_item_date, creation_date)
-VALUES
-  ('Buy groceries', false, '2024-10-01 15:00:00', '2024-09-24'),
-  ('Finish homework', true, '2024-09-25 18:00:00', '2024-09-24'),
-  ('Meet with client', false, '2024-09-26 10:30:00', '2024-09-24'),
-  ('Clean the house', false, null, '2024-09-24'),
-  ('Go for a run', true, '2024-09-23 07:00:00', '2024-09-24');"""
-
-CREATE_ROOMS_TABLE = (
-    "CREATE TABLE IF NOT EXISTS rooms (id SERIAL PRIMARY KEY, name TEXT);"
-)
-
-
-CREATE_TEMPS_TABLE = """CREATE TABLE IF NOT EXISTS temperatures (room_id INTEGER, temperature REAL, 
-                        date TIMESTAMP);"""
-
-INSERT_ROOM_RETURN_ID = "INSERT INTO rooms (name) VALUES (%s) RETURNING id;"
-INSERT_TEMP = (
-    "INSERT INTO temperatures (room_id, temperature, date) VALUES (%s, %s, %s);"
-)
+INSERT_TO_DO_ITEM="""INSERT INTO to_do_items (to_do_content, checked, creation_date)
+VALUES  (%s,%s,%s) RETURNING id;"""
 
 def get_db_connection():
     conn = psycopg2.connect(host='localhost',
@@ -72,14 +54,19 @@ def queryToDoItems():
 @app.post("/api/todo")
 def addItem():
     try:
+        data = request.get_json()
+        content = data["content"]
+        checked = data["checked"]
+        creation_date = data["creation_date"]
         conn=None
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(CREATE_TO_DO_ITEM_TABLE)
-                cur.execute(INSERT_TEST_TO_DO_ITEM)
+                cur.execute(INSERT_TO_DO_ITEM,(content,checked,creation_date))
+                item_id= cur.fetchone()[0]
                 cur.close()
                 conn.commit()
-                return {"message": "Item added."}, 201
+                return {"id": item_id, "message": "Item added."}, 201
     except Exception as error:
         print(error)
     finally:
@@ -87,21 +74,17 @@ def addItem():
             print("Connection failed")
             conn.close()
 
-@app.post("/api/temperature")
-def add_temp():
-    data = request.get_json()
-    temperature = data["temperature"]
-    room_id = data["room"]
-    try:
-        date = datetime.datetime.strptime(data["date"], "%m-%d-%Y %H:%M:%S")
-    except KeyError:
-        date = datetime.datetime.now()
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(CREATE_TEMPS_TABLE)
-            cursor.execute(INSERT_TEMP, (room_id, temperature, date))
-    return {"message": "Temperature added."}, 201
-
+@app.post("/api/test")
+def test():
+    data=request.get_json()
+    content = data["content"]
+    checked = data["checked"]
+    creation_date = data["creation_date"]
+    print(type(content))
+    print(type(checked))
+    print(type(creation_date))
+    # conn=None
+    return {"message": "Cooke."}, 201
 
 if __name__ =="__main__":
     app.run(debug=True, port=8080)
