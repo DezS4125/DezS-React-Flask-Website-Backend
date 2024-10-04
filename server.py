@@ -5,6 +5,9 @@ import psycopg2.extras
 import os
 import json
 import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app= Flask(__name__)
 cors = CORS(app, origin="*")
@@ -71,8 +74,27 @@ def addItem():
         print(error)
     finally:
         if conn != None:
-            print("Connection failed")
             conn.close()
+
+@app.delete("/api/todo")
+def deleteItem():
+    try:
+        data = request.get_json()
+        id = data["id"]
+        conn=None
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                statement="call delete_to_do_item(%s);"
+                cur.execute(statement,(id,))
+                cur.close()
+                return {"id": id, "message": "Item deleted."}, 202
+    except Exception as error:
+        print(error)
+    finally:
+        if conn != None:
+            conn.close()
+
+
 
 @app.post("/api/test")
 def test():
